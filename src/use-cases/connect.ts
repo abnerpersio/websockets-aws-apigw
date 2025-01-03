@@ -1,13 +1,13 @@
+import { dynamoClient } from '@/clients/dynamo';
+import { env } from '@/config/env';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
-import { dynamoClient } from '../clients/dynamo';
-import { env } from '../config/env';
 
 type Data = {
   connectionId: string;
   connectedAt: number;
 };
 
-export class ConnectController {
+export class ConnectUseCase {
   async handle(data: Data) {
     const { connectionId, connectedAt } = data;
 

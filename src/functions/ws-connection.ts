@@ -1,20 +1,32 @@
-import type { APIGatewayProxyWebsocketEventV2 } from 'aws-lambda';
-import { ConnectController } from '../controller/connect';
-import { DisconnectController } from '../controller/disconnect';
+import {
+  Controller,
+  HttpResult,
+  WSAdapter,
+  WSPayload,
+} from '@/lib/adapters/ws';
+import { ConnectUseCase } from '@/use-cases/connect';
+import { DisconnectUseCase } from '@/use-cases/disconnect';
 
 type RouteKey = '$connect' | '$disconnect';
 
-export async function handler(event: APIGatewayProxyWebsocketEventV2) {
-  const routeKey = event.requestContext.routeKey as RouteKey;
-  const { connectionId, connectedAt } = event.requestContext;
+class WSConnectionController implements Controller {
+  async handle(payload: WSPayload<RouteKey>): Promise<HttpResult> {
+    const { key, connection } = payload;
 
-  if (routeKey === '$connect') {
-    await new ConnectController().handle({ connectionId, connectedAt });
+    if (key === '$connect') {
+      await new ConnectUseCase().handle({
+        connectionId: connection.id,
+        connectedAt: connection.connectedAt,
+      });
+    }
+
+    if (key === '$disconnect') {
+      await new DisconnectUseCase().handle(connection.id);
+    }
+
+    return { statusCode: 204 };
   }
-
-  if (routeKey === '$disconnect') {
-    await new DisconnectController().handle(connectionId);
-  }
-
-  return { statusCode: 204 };
 }
+
+const controller = new WSConnectionController();
+export const handler = new WSAdapter(controller).adapt;
